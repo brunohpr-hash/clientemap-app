@@ -1,0 +1,299 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../lib/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  // URL is managed entirely by prisma.config.ts in Prisma 7
+  // Migrations use DIRECT_URL; runtime PrismaClient uses DATABASE_URL
+}
+
+// ===================================
+// ENUMS
+// ===================================
+
+enum UserRole {
+  admin
+  collaborator
+}
+
+enum UserStatus {
+  active
+  inactive
+}
+
+enum ClientStatus {
+  active
+  inactive
+  closing
+}
+
+enum RegimeTributario {
+  mei
+  simples_nacional
+  lucro_presumido
+  lucro_real
+}
+
+enum CriticalityLevel {
+  informativa
+  atencao
+  critica
+}
+
+// ===================================
+// USERS
+// ===================================
+
+model User {
+  id           String     @id @default(uuid())
+  name         String     @db.VarChar(200)
+  email        String     @unique @db.VarChar(255)
+  passwordHash String     @map("password_hash") @db.VarChar(255)
+  role         UserRole   @default(collaborator)
+  status       UserStatus @default(active)
+  avatarUrl    String?    @map("avatar_url") @db.VarChar(500)
+  createdAt    DateTime   @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt    DateTime   @updatedAt @map("updated_at") @db.Timestamptz()
+
+  sectors                 UserSector[]
+  clientResponsibles      ClientResponsible[]
+  particularidadesCreated Particularidade[]           @relation("CreatedBy")
+  particularidadesUpdated Particularidade[]           @relation("UpdatedBy")
+  attachmentsUploaded     ParticularidadeAttachment[]
+  historyActions          ParticularidadeHistory[]
+  notifications           Notification[]
+  auditLogs               AuditLog[]
+  refreshTokens           RefreshToken[]
+  settingsUpdated         SystemSetting[]
+
+  @@map("users")
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  tokenHash String   @unique @map("token_hash") @db.VarChar(255)
+  expiresAt DateTime @map("expires_at") @db.Timestamptz()
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz()
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("refresh_tokens")
+}
+
+// ===================================
+// SECTORS + CATEGORIES
+// ===================================
+
+model Sector {
+  id        String   @id @default(uuid())
+  name      String   @db.VarChar(100)
+  slug      String   @unique @db.VarChar(100)
+  color     String?  @default("#3B82F6") @db.VarChar(7)
+  order     Int      @default(0)
+  isDefault Boolean  @default(false) @map("is_default")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz()
+
+  userSectors        UserSector[]
+  categories         Category[]
+  clientResponsibles ClientResponsible[]
+  particularidades   Particularidade[]
+
+  @@map("sectors")
+}
+
+model UserSector {
+  userId   String @map("user_id")
+  sectorId String @map("sector_id")
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sector Sector @relation(fields: [sectorId], references: [id], onDelete: Cascade)
+
+  @@id([userId, sectorId])
+  @@map("user_sectors")
+}
+
+model Category {
+  id        String   @id @default(uuid())
+  sectorId  String   @map("sector_id")
+  name      String   @db.VarChar(200)
+  order     Int      @default(0)
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz()
+
+  sector           Sector            @relation(fields: [sectorId], references: [id], onDelete: Cascade)
+  particularidades Particularidade[]
+
+  @@map("categories")
+}
+
+// ===================================
+// CLIENTS
+// ===================================
+
+model Client {
+  id                      String           @id @default(uuid())
+  razaoSocial             String           @map("razao_social") @db.VarChar(300)
+  nomeFantasia            String?          @map("nome_fantasia") @db.VarChar(300)
+  cnpjCpf                 String           @unique @map("cnpj_cpf") @db.VarChar(18)
+  inscricaoEstadual       String?          @map("inscricao_estadual") @db.VarChar(50)
+  inscricaoMunicipal      String?          @map("inscricao_municipal") @db.VarChar(50)
+  regimeTributario        RegimeTributario @map("regime_tributario")
+  dataInicioContabilidade DateTime?        @map("data_inicio_contabilidade") @db.Date
+  status                  ClientStatus     @default(active)
+  observacoes             String?          @db.Text
+  createdAt               DateTime         @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt               DateTime         @updatedAt @map("updated_at") @db.Timestamptz()
+
+  responsibles     ClientResponsible[]
+  particularidades Particularidade[]
+
+  @@map("clients")
+}
+
+model ClientResponsible {
+  id        String   @id @default(uuid())
+  clientId  String   @map("client_id")
+  userId    String   @map("user_id")
+  sectorId  String   @map("sector_id")
+  isPrimary Boolean  @default(false) @map("is_primary")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz()
+
+  client Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id])
+  sector Sector @relation(fields: [sectorId], references: [id])
+
+  @@unique([clientId, sectorId])
+  @@map("client_responsibles")
+}
+
+// ===================================
+// PARTICULARIDADES
+// ===================================
+
+model Particularidade {
+  id             String           @id @default(uuid())
+  clientId       String           @map("client_id")
+  sectorId       String           @map("sector_id")
+  categoryId     String?          @map("category_id")
+  title          String           @db.VarChar(150)
+  description    String           @db.Text
+  criticality    CriticalityLevel @default(informativa)
+  vigenciaInicio DateTime         @map("vigencia_inicio") @db.Date
+  vigenciaFim    DateTime?        @map("vigencia_fim") @db.Date
+  isActive       Boolean          @default(true) @map("is_active")
+  createdBy      String           @map("created_by")
+  updatedBy      String           @map("updated_by")
+  createdAt      DateTime         @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt      DateTime         @updatedAt @map("updated_at") @db.Timestamptz()
+
+  client        Client    @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  sector        Sector    @relation(fields: [sectorId], references: [id])
+  category      Category? @relation(fields: [categoryId], references: [id])
+  createdByUser User      @relation("CreatedBy", fields: [createdBy], references: [id])
+  updatedByUser User      @relation("UpdatedBy", fields: [updatedBy], references: [id])
+
+  attachments ParticularidadeAttachment[]
+  history     ParticularidadeHistory[]
+
+  @@index([clientId])
+  @@index([sectorId])
+  @@index([vigenciaFim])
+  @@index([criticality])
+  @@map("particularidades")
+}
+
+// Attachments — max 5 per particularidade, max 10 MB each
+model ParticularidadeAttachment {
+  id                String   @id @default(uuid())
+  particularidadeId String   @map("particularidade_id")
+  filename          String   @db.VarChar(500)
+  originalName      String   @map("original_name") @db.VarChar(500)
+  fileUrl           String   @map("file_url") @db.VarChar(1000)
+  fileSize          Int      @map("file_size")
+  mimeType          String?  @map("mime_type") @db.VarChar(100)
+  uploadedBy        String   @map("uploaded_by")
+  createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz()
+
+  particularidade Particularidade @relation(fields: [particularidadeId], references: [id], onDelete: Cascade)
+  uploader        User            @relation(fields: [uploadedBy], references: [id])
+
+  @@map("particularidade_attachments")
+}
+
+// Append-only — never delete records
+model ParticularidadeHistory {
+  id                String   @id @default(uuid())
+  particularidadeId String   @map("particularidade_id")
+  action            String   @db.VarChar(50) // created | updated | closed | reactivated
+  changedFields     Json?    @map("changed_fields")
+  oldValues         Json?    @map("old_values")
+  newValues         Json?    @map("new_values")
+  performedBy       String   @map("performed_by")
+  performedAt       DateTime @default(now()) @map("performed_at") @db.Timestamptz()
+
+  particularidade Particularidade @relation(fields: [particularidadeId], references: [id])
+  performer       User            @relation(fields: [performedBy], references: [id])
+
+  @@index([particularidadeId])
+  @@map("particularidade_history")
+}
+
+// ===================================
+// NOTIFICATIONS
+// ===================================
+
+model Notification {
+  id            String   @id @default(uuid())
+  userId        String   @map("user_id")
+  type          String   @db.VarChar(50)
+  title         String   @db.VarChar(300)
+  message       String?  @db.Text
+  referenceId   String?  @map("reference_id")
+  referenceType String?  @map("reference_type") @db.VarChar(50)
+  isRead        Boolean  @default(false) @map("is_read")
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz()
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isRead])
+  @@map("notifications")
+}
+
+// ===================================
+// AUDIT LOG — append-only, never delete
+// ===================================
+
+model AuditLog {
+  id         String   @id @default(uuid())
+  userId     String?  @map("user_id")
+  action     String   @db.VarChar(100)
+  entityType String   @map("entity_type") @db.VarChar(50)
+  entityId   String?  @map("entity_id")
+  details    Json?
+  ipAddress  String?  @map("ip_address") @db.VarChar(45)
+  userAgent  String?  @map("user_agent") @db.Text
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz()
+
+  user User? @relation(fields: [userId], references: [id])
+
+  @@map("audit_log")
+}
+
+// ===================================
+// SYSTEM SETTINGS
+// ===================================
+
+model SystemSetting {
+  key       String   @id @db.VarChar(100)
+  value     Json
+  updatedBy String?  @map("updated_by")
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz()
+
+  updater User? @relation(fields: [updatedBy], references: [id])
+
+  @@map("system_settings")
+}
