@@ -113,16 +113,26 @@ export function ParticularidadeForm({
 
       // Upload attachments if any
       if (files.length > 0) {
-        await Promise.all(
-          files.map((file) => {
-            const fd = new FormData();
-            fd.append("file", file);
-            return fetch(`/api/particularidades/${data.id}/attachments`, {
-              method: "POST",
-              body: fd,
-            });
-          })
-        );
+        try {
+          await Promise.all(
+            files.map(async (file) => {
+              const fd = new FormData();
+              fd.append("file", file);
+              const r = await fetch(`/api/particularidades/${data.id}/attachments`, {
+                method: "POST",
+                body: fd,
+              });
+              if (!r.ok) {
+                const errData = await r.json().catch(() => ({}));
+                throw new Error(errData.error || `Falha no upload do arquivo ${file.name}`);
+              }
+            })
+          );
+        } catch (uploadErr) {
+          toast.error(uploadErr instanceof Error ? uploadErr.message : "Erro no upload de anexos.");
+          // We can optionally stop here, but the particularidade is already created
+          // So we should let the user see it, but inform of partial failure
+        }
       }
 
       toast.success("Particularidade criada com sucesso");
