@@ -9,12 +9,7 @@ export const GET = withAuth(async (request, _context, { user }) => {
   const criticality = url.searchParams.get("criticality");
   const status = url.searchParams.get("status"); // active | closed | all
 
-  const accessFilter =
-    user.role === "admin"
-      ? {}
-      : { client: { responsibles: { some: { userId: user.sub } } } };
-
-  const where: Record<string, unknown> = { ...accessFilter };
+  const where: Record<string, unknown> = {};
   if (clientId) where.clientId = clientId;
   if (sectorId) where.sectorId = sectorId;
   if (criticality) where.criticality = criticality;

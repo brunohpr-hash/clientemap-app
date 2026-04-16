@@ -16,14 +16,6 @@ export const POST = withAuth(async (request, context, { user }) => {
   });
   if (!item) return err("Particularidade não encontrada", 404);
 
-  // Check access
-  if (user.role !== "admin") {
-    const responsible = await prisma.clientResponsible.findFirst({
-      where: { clientId: item.clientId, userId: user.sub, sectorId: item.sectorId },
-    });
-    if (!responsible) return err("Sem permissão", 403);
-  }
-
   let formData: FormData;
   try {
     formData = await request.formData();

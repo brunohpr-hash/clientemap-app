@@ -17,13 +17,8 @@ const updateSchema = z.object({
 export const GET = withAuth(async (_request, context, { user }) => {
   const { id } = await context.params;
 
-  const accessFilter =
-    user.role === "admin"
-      ? {}
-      : { client: { responsibles: { some: { userId: user.sub } } } };
-
   const item = await prisma.particularidade.findFirst({
-    where: { id, ...accessFilter },
+    where: { id },
     include: {
       category: { select: { id: true, name: true } },
       sector: { select: { id: true, name: true, slug: true, color: true } },
@@ -62,14 +57,6 @@ export const PATCH = withAuth(async (request, context, { user }) => {
 
   const current = await prisma.particularidade.findUnique({ where: { id } });
   if (!current) return err("Particularidade não encontrada", 404);
-
-  // Check access
-  if (user.role !== "admin") {
-    const responsible = await prisma.clientResponsible.findFirst({
-      where: { clientId: current.clientId, userId: user.sub, sectorId: current.sectorId },
-    });
-    if (!responsible) return err("Sem permissão para este cliente/setor", 403);
-  }
 
   const { vigenciaInicio, vigenciaFim, ...rest } = parsed.data;
   const updateData: Record<string, unknown> = { ...rest, updatedBy: user.sub };

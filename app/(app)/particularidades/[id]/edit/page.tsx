@@ -16,23 +16,14 @@ export default async function EditParticularidadePage({
   const token = cookieStore.get("access_token")?.value;
   if (!token) redirect("/login");
 
-  let userId: string;
-  let userRole: string;
   try {
-    const payload = verifyAccessToken(token);
-    userId = payload.sub;
-    userRole = payload.role;
+    verifyAccessToken(token);
   } catch {
     redirect("/login");
   }
 
-  const accessFilter =
-    userRole === "admin"
-      ? {}
-      : { client: { responsibles: { some: { userId } } } };
-
   const item = await prisma.particularidade.findFirst({
-    where: { id, ...accessFilter },
+    where: { id },
     include: {
       sector: { select: { id: true, name: true } },
       client: { select: { id: true, razaoSocial: true, nomeFantasia: true } },

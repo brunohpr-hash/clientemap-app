@@ -7,69 +7,32 @@ import { prisma } from "@/lib/prisma";
 import { AppHeader } from "@/components/shared/app-header";
 import { Badge } from "@/components/ui/badge";
 
-async function getSectorsData(userId: string, role: string) {
+async function getSectorsData() {
   const sectors = await prisma.sector.findMany({ orderBy: { order: "asc" } });
-
-  const accessFilter =
-    role === "admin"
-      ? {}
-      : { responsibles: { some: { userId } } };
 
   const sectorStats = await Promise.all(
     sectors.map(async (sector) => {
       const clientCount = await prisma.client.count({
         where: {
           status: "active",
-          ...accessFilter,
-          responsibles: { some: { sectorId: sector.id, ...(role !== "admin" ? { userId } : {}) } },
+          responsibles: { some: { sectorId: sector.id } },
         },
       });
 
       const activeCount = await prisma.particularidade.count({
-        where: {
-          sectorId: sector.id,
-          isActive: true,
-          vigenciaFim: null,
-          ...(role !== "admin"
-            ? { client: { responsibles: { some: { userId, sectorId: sector.id } } } }
-            : {}),
-        },
+        where: { sectorId: sector.id, isActive: true, vigenciaFim: null },
       });
 
       const criticalCount = await prisma.particularidade.count({
-        where: {
-          sectorId: sector.id,
-          isActive: true,
-          vigenciaFim: null,
-          criticality: "critica",
-          ...(role !== "admin"
-            ? { client: { responsibles: { some: { userId, sectorId: sector.id } } } }
-            : {}),
-        },
+        where: { sectorId: sector.id, isActive: true, vigenciaFim: null, criticality: "critica" },
       });
 
       const atencaoCount = await prisma.particularidade.count({
-        where: {
-          sectorId: sector.id,
-          isActive: true,
-          vigenciaFim: null,
-          criticality: "atencao",
-          ...(role !== "admin"
-            ? { client: { responsibles: { some: { userId, sectorId: sector.id } } } }
-            : {}),
-        },
+        where: { sectorId: sector.id, isActive: true, vigenciaFim: null, criticality: "atencao" },
       });
 
-      // Recent particularidades
       const recent = await prisma.particularidade.findMany({
-        where: {
-          sectorId: sector.id,
-          isActive: true,
-          vigenciaFim: null,
-          ...(role !== "admin"
-            ? { client: { responsibles: { some: { userId, sectorId: sector.id } } } }
-            : {}),
-        },
+        where: { sectorId: sector.id, isActive: true, vigenciaFim: null },
         orderBy: { updatedAt: "desc" },
         take: 3,
         select: {
@@ -84,7 +47,7 @@ async function getSectorsData(userId: string, role: string) {
     })
   );
 
-  return sectorStats.filter((s) => s.clientCount > 0 || role === "admin");
+  return sectorStats.filter((s) => s.activeCount > 0 || s.clientCount > 0);
 }
 
 export default async function SectorsPage() {
@@ -92,17 +55,13 @@ export default async function SectorsPage() {
   const token = cookieStore.get("access_token")?.value;
   if (!token) redirect("/login");
 
-  let userId: string;
-  let userRole: string;
   try {
-    const payload = verifyAccessToken(token);
-    userId = payload.sub;
-    userRole = payload.role;
+    verifyAccessToken(token);
   } catch {
     redirect("/login");
   }
 
-  const sectorStats = await getSectorsData(userId, userRole);
+  const sectorStats = await getSectorsData();
 
   return (
     <>

@@ -9,13 +9,8 @@ export const GET = withAuth(async (request, _context, { user }) => {
 
   if (!clientId) return err("clientId is required", 400);
 
-  const accessFilter =
-    user.role === "admin"
-      ? {}
-      : { responsibles: { some: { userId: user.sub } } };
-
   const client = await prisma.client.findFirst({
-    where: { id: clientId, ...accessFilter },
+    where: { id: clientId },
     include: {
       responsibles: {
         include: {

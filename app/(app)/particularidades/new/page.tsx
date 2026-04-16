@@ -14,12 +14,8 @@ export default async function NewParticularidadePage({
   const token = cookieStore.get("access_token")?.value;
   if (!token) redirect("/login");
 
-  let userId: string;
-  let userRole: string;
   try {
-    const payload = verifyAccessToken(token);
-    userId = payload.sub;
-    userRole = payload.role;
+    verifyAccessToken(token);
   } catch {
     redirect("/login");
   }
@@ -30,14 +26,8 @@ export default async function NewParticularidadePage({
   const sectors = await prisma.sector.findMany({ orderBy: { order: "asc" } });
   const categories = await prisma.category.findMany({ orderBy: { name: "asc" } });
 
-  // Load clients this user can access
-  const clientsWhere =
-    userRole === "admin"
-      ? {}
-      : { responsibles: { some: { userId } } };
-
   const clients = await prisma.client.findMany({
-    where: { status: "active", ...clientsWhere },
+    where: { status: "active" },
     select: { id: true, razaoSocial: true, nomeFantasia: true, cnpjCpf: true },
     orderBy: { razaoSocial: "asc" },
     take: 500,

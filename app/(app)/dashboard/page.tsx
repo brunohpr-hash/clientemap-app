@@ -5,54 +5,18 @@ import { prisma } from "@/lib/prisma";
 import { cookies } from "next/headers";
 import { verifyAccessToken } from "@/lib/auth";
 
-async function getDashboardStats(userId: string, role: string) {
-  const isAdmin = role === "admin";
-
-  // For collaborators, scope to their sector clients
-  const userSectors = isAdmin
-    ? null
-    : await prisma.userSector.findMany({
-        where: { userId },
-        select: { sectorId: true },
-      });
-
-  const sectorIds = userSectors?.map((s: { sectorId: string }) => s.sectorId);
-
-  const clientWhere = isAdmin
-    ? { status: "active" as const }
-    : {
-        status: "active" as const,
-        responsibles: { some: { userId, sectorId: { in: sectorIds } } },
-      };
-
-  const [totalClients, critCount, atencaoCount, sectors, recent] =
+async function getDashboardStats() {
+  const [totalClients, critCount, atencaoCount, recent] =
     await Promise.all([
-      prisma.client.count({ where: clientWhere }),
+      prisma.client.count({ where: { status: "active" } }),
       prisma.particularidade.count({
-        where: {
-          criticality: "critica",
-          isActive: true,
-          vigenciaFim: null,
-          client: clientWhere,
-          ...(sectorIds ? { sectorId: { in: sectorIds } } : {}),
-        },
+        where: { criticality: "critica", isActive: true, vigenciaFim: null },
       }),
       prisma.particularidade.count({
-        where: {
-          criticality: "atencao",
-          isActive: true,
-          vigenciaFim: null,
-          client: clientWhere,
-          ...(sectorIds ? { sectorId: { in: sectorIds } } : {}),
-        },
+        where: { criticality: "atencao", isActive: true, vigenciaFim: null },
       }),
-      prisma.sector.findMany({ orderBy: { order: "asc" } }),
       prisma.particularidade.findMany({
-        where: {
-          isActive: true,
-          client: clientWhere,
-          ...(sectorIds ? { sectorId: { in: sectorIds } } : {}),
-        },
+        where: { isActive: true },
         orderBy: { updatedAt: "desc" },
         take: 8,
         select: {
@@ -67,7 +31,7 @@ async function getDashboardStats(userId: string, role: string) {
       }),
     ]);
 
-  return { totalClients, critCount, atencaoCount, sectors, recent };
+  return { totalClients, critCount, atencaoCount, recent };
 }
 
 export default async function DashboardPage() {
@@ -78,7 +42,7 @@ export default async function DashboardPage() {
   if (!payload) return null;
 
   const { totalClients, critCount, atencaoCount, recent } =
-    await getDashboardStats(payload.sub, payload.role);
+    await getDashboardStats();
 
   const stats = [
     {
