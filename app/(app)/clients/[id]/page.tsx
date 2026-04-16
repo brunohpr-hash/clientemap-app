@@ -28,13 +28,8 @@ export default async function ClientDetailPage({
   const payload = token ? verifyAccessToken(token) : null;
   if (!payload) return null;
 
-  const accessFilter =
-    payload.role === "admin"
-      ? {}
-      : { responsibles: { some: { userId: payload.sub } } };
-
   const client = await prisma.client.findFirst({
-    where: { id, ...accessFilter },
+    where: { id },
     include: {
       responsibles: {
         include: {

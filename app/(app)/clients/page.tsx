@@ -48,12 +48,7 @@ async function ClientList({ searchParams }: { searchParams: SearchParams }) {
   const take = 20;
   const skip = (page - 1) * take;
 
-  const accessFilter =
-    payload.role === "admin"
-      ? {}
-      : { responsibles: { some: { userId: payload.sub } } };
-
-  const where: Record<string, unknown> = { ...accessFilter };
+  const where: Record<string, unknown> = {};
   if (status) where.status = status;
   if (q) {
     where.OR = [

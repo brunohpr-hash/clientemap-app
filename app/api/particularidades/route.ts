@@ -24,13 +24,7 @@ export const GET = withAuth(async (request, _context, { user }) => {
   const status = url.searchParams.get("status"); // "active" | "closed"
   const q = url.searchParams.get("q");
 
-  // Collaborators only see clients they're responsible for
-  const accessFilter =
-    user.role === "admin"
-      ? {}
-      : { client: { responsibles: { some: { userId: user.sub } } } };
-
-  const where: Record<string, unknown> = { ...accessFilter };
+  const where: Record<string, unknown> = {};
   if (clientId) where.clientId = clientId;
   if (sectorId) where.sectorId = sectorId;
   if (criticality) where.criticality = criticality;
@@ -75,14 +69,6 @@ export const POST = withAuth(async (request, _context, { user }) => {
   if (!parsed.success) return validationError(parsed.error);
 
   const { vigenciaInicio, vigenciaFim, ...data } = parsed.data;
-
-  // Check access: collaborator must be responsible for the sector on this client
-  if (user.role !== "admin") {
-    const responsible = await prisma.clientResponsible.findFirst({
-      where: { clientId: data.clientId, userId: user.sub, sectorId: data.sectorId },
-    });
-    if (!responsible) return err("Sem permissão para este cliente/setor", 403);
-  }
 
   const item = await prisma.particularidade.create({
     data: {

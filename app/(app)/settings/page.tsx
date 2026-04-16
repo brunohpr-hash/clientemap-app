@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Save, Loader2, Users, ArrowRight, Tags } from "lucide-react";
+import { Save, Loader2, Users, ArrowRight, Tags, Layers } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -67,7 +67,7 @@ function SettingsPage() {
       <div className="max-w-2xl mx-auto px-6 py-6 space-y-6">
 
         {/* Quick nav */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <Link
             href="/settings/users"
             className="flex items-center justify-between p-4 rounded-xl border bg-card hover:bg-muted/50 transition-colors group"
@@ -93,7 +93,22 @@ function SettingsPage() {
               </div>
               <div>
                 <p className="font-medium text-sm">Categorias</p>
-                <p className="text-xs text-muted-foreground">Cadastrar e gerenciar categorias de particularidades</p>
+                <p className="text-xs text-muted-foreground">Cadastrar e gerenciar categorias</p>
+              </div>
+            </div>
+            <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:text-foreground transition-colors" />
+          </Link>
+          <Link
+            href="/settings/sectors"
+            className="flex items-center justify-between p-4 rounded-xl border bg-card hover:bg-muted/50 transition-colors group"
+          >
+            <div className="flex items-center gap-3">
+              <div className="h-9 w-9 rounded-lg bg-emerald-500/10 flex items-center justify-center">
+                <Layers className="h-4 w-4 text-emerald-600" />
+              </div>
+              <div>
+                <p className="font-medium text-sm">Setores</p>
+                <p className="text-xs text-muted-foreground">Cadastrar e gerenciar setores</p>
               </div>
             </div>
             <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:text-foreground transition-colors" />

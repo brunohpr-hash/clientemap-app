@@ -14,14 +14,9 @@ import { AppHeader } from "@/components/shared/app-header";
 import { DeleteParticularidadeButton } from "@/components/particularidades/delete-button";
 import { cn } from "@/lib/utils";
 
-async function getParticularidade(id: string, userId: string, role: string) {
-  const accessFilter =
-    role === "admin"
-      ? {}
-      : { client: { responsibles: { some: { userId } } } };
-
+async function getParticularidade(id: string) {
   return prisma.particularidade.findFirst({
-    where: { id, ...accessFilter },
+    where: { id },
     include: {
       category: { select: { id: true, name: true } },
       sector: { select: { id: true, name: true, slug: true, color: true } },
@@ -119,7 +114,7 @@ export default async function ParticularidadePage({
     redirect("/login");
   }
 
-  const item = await getParticularidade(id, userId, userRole);
+  const item = await getParticularidade(id);
   if (!item) notFound();
 
   const isClosed = !item.isActive || item.vigenciaFim != null;

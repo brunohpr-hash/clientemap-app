@@ -19,13 +19,8 @@ const updateClientSchema = z.object({
 export const GET = withAuth(async (_request, context, { user }) => {
   const { id } = await context.params;
 
-  const accessFilter =
-    user.role === "admin"
-      ? {}
-      : { responsibles: { some: { userId: user.sub } } };
-
   const client = await prisma.client.findFirst({
-    where: { id, ...accessFilter },
+    where: { id },
     include: {
       responsibles: {
         include: {

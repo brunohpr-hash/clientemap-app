@@ -25,21 +25,11 @@ export const GET = withAuth(async (request, _context, { user }) => {
   const regime = url.searchParams.get("regime");
   const sectorId = url.searchParams.get("sectorId");
 
-  // Collaborators only see clients where they are responsible for at least one sector
-  const accessFilter =
-    user.role === "admin"
-      ? {}
-      : {
-          responsibles: {
-            some: { userId: user.sub },
-          },
-        };
-
-  const where: Record<string, unknown> = { ...accessFilter };
+  const where: Record<string, unknown> = {};
   if (status) where.status = status;
   if (regime) where.regimeTributario = regime;
   if (sectorId) {
-    where.responsibles = { some: { sectorId, ...(user.role !== "admin" ? { userId: user.sub } : {}) } };
+    where.responsibles = { some: { sectorId } };
   }
   if (q) {
     where.OR = [
