@@ -48,9 +48,12 @@ export function withAuth(handler: RouteHandler) {
   ): Promise<Response> => {
     try {
       const user = verifyRequestToken(request);
-      return handler(request, context, { user });
-    } catch {
-      return err("Unauthorized", 401);
+      return await handler(request, context, { user });
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      if (msg === "Unauthorized" || msg.includes("token")) return err("Unauthorized", 401);
+      console.error("[withAuth] unhandled error:", e);
+      return err("Internal server error", 500);
     }
   };
 }
@@ -63,9 +66,12 @@ export function withAdmin(handler: AdminRouteHandler) {
     try {
       const user = verifyRequestToken(request);
       if (user.role !== "admin") return err("Forbidden", 403);
-      return handler(request, context, { user });
-    } catch {
-      return err("Unauthorized", 401);
+      return await handler(request, context, { user });
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      if (msg === "Unauthorized" || msg.includes("token")) return err("Unauthorized", 401);
+      console.error("[withAdmin] unhandled error:", e);
+      return err("Internal server error", 500);
     }
   };
 }

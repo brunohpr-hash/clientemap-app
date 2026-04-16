@@ -31,7 +31,14 @@ export const POST = withAuth(async (request, context, { user }) => {
   const filename = `${randomUUID()}${ext}`;
   const buffer = Buffer.from(await file.arrayBuffer());
 
-  const fileUrl = await uploadAttachment(id, filename, buffer, file.type);
+  let fileUrl: string;
+  try {
+    fileUrl = await uploadAttachment(id, filename, buffer, file.type);
+  } catch (e) {
+    console.error("[attachments/POST] upload error:", e);
+    const msg = e instanceof Error ? e.message : "Erro desconhecido no upload";
+    return err(`Falha no upload: ${msg}`, 500);
+  }
 
   const attachment = await prisma.particularidadeAttachment.create({
     data: {

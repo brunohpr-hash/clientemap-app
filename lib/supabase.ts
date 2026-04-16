@@ -26,8 +26,11 @@ function getSupabaseAdmin(): SupabaseClient | null {
 }
 
 // --- Local disk storage fallback (dev without Supabase) ---
-
-const LOCAL_UPLOAD_DIR = path.join(process.cwd(), "public", "uploads");
+// On Vercel the root FS is read-only; use /tmp instead.
+const LOCAL_UPLOAD_DIR =
+  process.env.VERCEL || process.env.NODE_ENV === "production"
+    ? "/tmp/uploads"
+    : path.join(process.cwd(), "public", "uploads");
 
 async function ensureUploadDir(subPath: string): Promise<void> {
   const dir = path.join(LOCAL_UPLOAD_DIR, subPath);
@@ -70,7 +73,14 @@ export async function uploadAttachment(
     return data.publicUrl;
   }
 
-  // Local disk fallback
+  // In production without Supabase configured, refuse the upload with a clear message.
+  if (process.env.NODE_ENV === "production" || process.env.VERCEL) {
+    throw new Error(
+      "Storage não configurado. Configure NEXT_PUBLIC_SUPABASE_URL e SUPABASE_SERVICE_ROLE_KEY nas variáveis de ambiente."
+    );
+  }
+
+  // Local disk fallback (dev only)
   return uploadLocal(particularidadeId, filename, buffer);
 }
 
