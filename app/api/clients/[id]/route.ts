@@ -4,14 +4,14 @@ import { withAuth, ok, noContent, validationError, err } from "@/lib/api";
 
 const updateClientSchema = z.object({
   razaoSocial: z.string().min(2).max(300).optional(),
-  nomeFantasia: z.string().max(300).optional(),
+  nomeFantasia: z.string().max(300).nullish(),
   cnpjCpf: z.string().min(11).max(18).optional(),
-  inscricaoEstadual: z.string().max(50).optional(),
-  inscricaoMunicipal: z.string().max(50).optional(),
+  inscricaoEstadual: z.string().max(50).nullish(),
+  inscricaoMunicipal: z.string().max(50).nullish(),
   regimeTributario: z.enum(["mei", "simples_nacional", "lucro_presumido", "lucro_real"]).optional(),
-  dataInicioContabilidade: z.string().optional(),
+  dataInicioContabilidade: z.string().nullish(),
   status: z.enum(["active", "inactive", "closing"]).optional(),
-  observacoes: z.string().optional(),
+  observacoes: z.string().nullish(),
   responsibles: z.record(z.string().uuid(), z.string().uuid()).optional(),
 });
 
@@ -58,7 +58,12 @@ export const PATCH = withAuth(async (request, context, { user }) => {
 
   const updateData: Record<string, unknown> = { ...rest };
   if (cnpjCpf) updateData.cnpjCpf = cnpjCpf;
-  if (dataInicioContabilidade) updateData.dataInicioContabilidade = new Date(dataInicioContabilidade);
+  // Handle date: set to new Date when provided, null to clear, skip when undefined
+  if (dataInicioContabilidade !== undefined) {
+    updateData.dataInicioContabilidade = dataInicioContabilidade
+      ? new Date(dataInicioContabilidade)
+      : null;
+  }
 
   // Replace responsibles if provided
   if (respMap) {
