@@ -1,12 +1,14 @@
 import { notFound } from "next/navigation";
+import Link from "next/link";
 import { cookies } from "next/headers";
 import { verifyAccessToken } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { Building2, Calendar, FileText } from "lucide-react";
+import { Building2, Calendar, FileText, Pencil } from "lucide-react";
 import { ParticularidadesList } from "@/components/particularidades/particularidades-list";
 import { DeleteClientButton } from "@/components/clients/delete-client-button";
 
@@ -87,7 +89,16 @@ export default async function ClientDetailPage({
           </div>
         </div>
         {payload.role === "admin" && (
-          <div className="shrink-0 pt-1">
+          <div className="shrink-0 pt-1 flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              render={<Link href={`/clients/${id}/edit`} />}
+              className="gap-1.5"
+            >
+              <Pencil className="h-3.5 w-3.5" />
+              Editar
+            </Button>
             <DeleteClientButton id={id} />
           </div>
         )}
