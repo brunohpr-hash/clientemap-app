@@ -78,7 +78,7 @@ function UserDialog({
         name: form.name.trim(),
         email: form.email.trim(),
         role: form.role,
-        sectorIds: form.sectorIds,
+        sectorIds: form.role === "admin" ? [] : form.sectorIds,
       };
       if (form.password) body.password = form.password;
 
@@ -243,13 +243,16 @@ function UsersPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status: newStatus }),
       });
-      if (!res.ok) throw new Error("Erro ao atualizar status");
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error ?? "Erro ao atualizar status");
+      }
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["users"] });
       toast.success("Status atualizado");
     },
-    onError: () => toast.error("Erro ao atualizar status"),
+    onError: (err) => toast.error(err instanceof Error ? err.message : "Erro ao atualizar status"),
   });
 
   const users = usersData ?? [];

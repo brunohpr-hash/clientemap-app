@@ -41,6 +41,12 @@ export const PATCH = withAdmin(async (request, context) => {
 
   const { sectorIds, password, email, ...rest } = parsed.data;
 
+  // Find the current user to resolve their role and ensure they exist
+  const currentUser = await prisma.user.findUnique({
+    where: { id },
+  });
+  if (!currentUser) return err("Usuário não encontrado", 404);
+
   const updateData: Record<string, unknown> = { ...rest };
 
   if (email) {
@@ -55,12 +61,20 @@ export const PATCH = withAdmin(async (request, context) => {
     updateData.passwordHash = await hashPassword(password);
   }
 
-  // Replace sectors if provided
-  if (sectorIds !== undefined) {
+  // Resolve final role to manage sectors appropriately
+  const finalRole = parsed.data.role ?? currentUser.role;
+
+  if (finalRole === "admin") {
+    // Admins do not have specific sectors assigned (they see everything)
     await prisma.userSector.deleteMany({ where: { userId: id } });
-    updateData.sectors = {
-      create: sectorIds.map((sectorId) => ({ sectorId })),
-    };
+  } else if (sectorIds !== undefined) {
+    // For collaborators, cleanly recreate sector assignments if provided
+    await prisma.userSector.deleteMany({ where: { userId: id } });
+    if (sectorIds.length > 0) {
+      await prisma.userSector.createMany({
+        data: sectorIds.map((sectorId) => ({ userId: id, sectorId })),
+      });
+    }
   }
 
   const user = await prisma.user.update({
