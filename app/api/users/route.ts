@@ -16,15 +16,20 @@ export const GET = withAdmin(async (request) => {
   const { skip, take, page } = getPagination(request.url);
   const url = new URL(request.url);
   const search = url.searchParams.get("q") ?? "";
+  const status = url.searchParams.get("status");
 
-  const where = search
-    ? {
-        OR: [
-          { name: { contains: search, mode: "insensitive" as const } },
-          { email: { contains: search, mode: "insensitive" as const } },
-        ],
-      }
-    : {};
+  const where: any = {};
+
+  if (status === "active" || status === "inactive") {
+    where.status = status;
+  }
+
+  if (search) {
+    where.OR = [
+      { name: { contains: search, mode: "insensitive" as const } },
+      { email: { contains: search, mode: "insensitive" as const } },
+    ];
+  }
 
   const [users, total] = await Promise.all([
     prisma.user.findMany({

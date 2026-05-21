@@ -22,6 +22,7 @@ interface User {
   id: string;
   name: string;
   email: string;
+  status: string;
 }
 
 interface ClientData {
@@ -81,9 +82,9 @@ export default function EditClientPage() {
   });
 
   const { data: users = [] } = useQuery<User[]>({
-    queryKey: ["users-select"],
+    queryKey: ["users-select", "active"],
     queryFn: async () => {
-      const res = await fetch("/api/users?limit=200");
+      const res = await fetch("/api/users?limit=200&status=active");
       const j = await res.json();
       return j.data ?? [];
     },
@@ -329,7 +330,7 @@ export default function EditClientPage() {
                       className={selectClass}
                     >
                       <option value="">Não atribuído</option>
-                      {users.map((u) => (
+                      {users.filter((u) => u.status === "active").map((u) => (
                         <option key={u.id} value={u.id}>{u.name}</option>
                       ))}
                     </select>
