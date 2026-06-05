@@ -88,8 +88,8 @@ export default async function ClientDetailPage({
             </div>
           </div>
         </div>
-        {payload.role === "admin" && (
-          <div className="shrink-0 pt-1 flex items-center gap-2">
+        <div className="shrink-0 pt-1 flex items-center gap-2">
+          {(payload.role === "admin" || payload.role === "collaborator") && (
             <Button
               variant="outline"
               size="sm"
@@ -99,9 +99,9 @@ export default async function ClientDetailPage({
               <Pencil className="h-3.5 w-3.5" />
               Editar
             </Button>
-            <DeleteClientButton id={id} />
-          </div>
-        )}
+          )}
+          {payload.role === "admin" && <DeleteClientButton id={id} />}
+        </div>
       </div>
 
       {/* Info cards */}

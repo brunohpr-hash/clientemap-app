@@ -12,6 +12,9 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { AppHeader } from "@/components/shared/app-header";
 import { cn } from "@/lib/utils";
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { useSession } from "@/components/providers/session-provider";
 
 interface Sector {
   id: string;
@@ -216,6 +219,14 @@ function UserDialog({
 function UsersPage() {
   const [dialogUser, setDialogUser] = useState<User | null | undefined>(undefined);
   const qc = useQueryClient();
+  const router = useRouter();
+  const { user } = useSession();
+
+  useEffect(() => {
+    if (user && user.role !== "admin") {
+      router.replace("/settings/categories");
+    }
+  }, [user, router]);
 
   const { data: usersData, isLoading } = useQuery({
     queryKey: ["users"],

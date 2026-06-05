@@ -9,6 +9,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { AppHeader } from "@/components/shared/app-header";
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { useSession } from "@/components/providers/session-provider";
 
 interface Sector {
   id: string;
@@ -57,6 +60,14 @@ function ColorPicker({ value, onChange }: { value: string; onChange: (c: string)
 
 export default function SectorsSettingsPage() {
   const qc = useQueryClient();
+  const router = useRouter();
+  const { user } = useSession();
+
+  useEffect(() => {
+    if (user && user.role !== "admin") {
+      router.replace("/settings/categories");
+    }
+  }, [user, router]);
 
   const [newName, setNewName] = useState("");
   const [newColor, setNewColor] = useState("#3B82F6");

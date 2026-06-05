@@ -37,7 +37,7 @@ export const GET = withAuth(async (_request, context, { user }) => {
 
 // PATCH /api/clients/:id
 export const PATCH = withAuth(async (request, context, { user }) => {
-  if (user.role !== "admin") return err("Apenas administradores podem editar clientes", 403);
+  if (user.role !== "admin" && user.role !== "collaborator") return err("Permissão insuficiente", 403);
 
   const { id } = await context.params;
 

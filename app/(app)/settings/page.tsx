@@ -9,11 +9,21 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { AppHeader } from "@/components/shared/app-header";
+import { useRouter } from "next/navigation";
+import { useSession } from "@/components/providers/session-provider";
 
 type SettingsMap = Record<string, string | number | boolean | null>;
 
 function SettingsPage() {
   const qc = useQueryClient();
+  const router = useRouter();
+  const { user } = useSession();
+
+  useEffect(() => {
+    if (user && user.role !== "admin") {
+      router.replace("/settings/categories");
+    }
+  }, [user, router]);
 
   const { data: settings, isLoading } = useQuery<SettingsMap>({
     queryKey: ["settings"],

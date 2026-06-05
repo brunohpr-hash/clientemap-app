@@ -66,7 +66,7 @@ export const GET = withAuth(async (request, _context, { user }) => {
 
 // POST /api/clients — create client
 export const POST = withAuth(async (request, _context, { user }) => {
-  if (user.role !== "admin") return err("Apenas administradores podem criar clientes", 403);
+  if (user.role !== "admin" && user.role !== "collaborator") return err("Permissão insuficiente", 403);
 
   let body: unknown;
   try { body = await request.json(); } catch { return err("Invalid JSON", 400); }

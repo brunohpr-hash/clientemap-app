@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { withAdmin, ok, noContent, validationError, err } from "@/lib/api";
+import { withAuth, ok, noContent, validationError, err } from "@/lib/api";
 
 const updateCategorySchema = z.object({
   name: z.string().min(2).max(200).optional(),
@@ -8,7 +8,7 @@ const updateCategorySchema = z.object({
   isActive: z.boolean().optional(),
 });
 
-export const PATCH = withAdmin(async (request, context) => {
+export const PATCH = withAuth(async (request, context) => {
   const { id } = await context.params;
 
   let body: unknown;
@@ -34,7 +34,7 @@ export const PATCH = withAdmin(async (request, context) => {
   return ok(category);
 });
 
-export const DELETE = withAdmin(async (_request, context) => {
+export const DELETE = withAuth(async (_request, context) => {
   const { id } = await context.params;
 
   const count = await prisma.particularidade.count({ where: { categoryId: id } });

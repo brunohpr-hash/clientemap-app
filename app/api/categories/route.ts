@@ -23,7 +23,7 @@ export const GET = withAuth(async (request) => {
   return ok(categories);
 });
 
-export const POST = withAdmin(async (request) => {
+export const POST = withAuth(async (request) => {
   let body: unknown;
   try { body = await request.json(); } catch { return err("Invalid JSON", 400); }
 

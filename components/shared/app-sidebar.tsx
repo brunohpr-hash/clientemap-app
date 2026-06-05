@@ -12,6 +12,7 @@ import {
   ChevronRight,
   Layers,
   FileBarChart2,
+  Tags,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useSession } from "@/components/providers/session-provider";
@@ -74,7 +75,7 @@ export function AppSidebar() {
           );
         })}
 
-        {user?.role === "admin" && (
+        {user?.role === "admin" ? (
           <>
             <Separator className="my-3 bg-sidebar-border" />
             <p className="px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-sidebar-foreground/40">
@@ -99,7 +100,26 @@ export function AppSidebar() {
               );
             })}
           </>
-        )}
+        ) : user?.role === "collaborator" ? (
+          <>
+            <Separator className="my-3 bg-sidebar-border" />
+            <p className="px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-sidebar-foreground/40">
+              Configurações
+            </p>
+            <Link
+              href="/settings/categories"
+              className={cn(
+                "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
+                pathname.startsWith("/settings/categories")
+                  ? "bg-sidebar-accent text-white"
+                  : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-white"
+              )}
+            >
+              <Tags className="h-4 w-4 shrink-0" />
+              Categorias
+            </Link>
+          </>
+        ) : null}
       </nav>
 
       {/* User footer */}
