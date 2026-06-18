@@ -4,6 +4,7 @@ import { Building2, AlertTriangle, AlertCircle, Clock } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { cookies } from "next/headers";
 import { verifyAccessToken } from "@/lib/auth";
+import { formatDateBR } from "@/lib/date";
 
 async function getDashboardStats() {
   const [totalClients, critCount, atencaoCount, recent] =
@@ -124,7 +125,7 @@ export default async function DashboardPage() {
                     </p>
                   </div>
                   <time className="text-xs text-muted-foreground shrink-0">
-                    {new Date(item.updatedAt).toLocaleDateString("pt-BR")}
+                    {formatDateBR(item.updatedAt)}
                   </time>
                 </li>
               ))}

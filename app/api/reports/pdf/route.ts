@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { withAuth, err } from "@/lib/api";
+import { formatDateBR, formatDateTimeBR } from "@/lib/date";
 
 // GET /api/reports/pdf?clientId=xxx — generate PDF for a client's particularidades
 export const GET = withAuth(async (request, _context, { user }) => {
@@ -89,7 +90,7 @@ export const GET = withAuth(async (request, _context, { user }) => {
 </head>
 <body>
 <h1>${client.nomeFantasia ?? client.razaoSocial}</h1>
-<p class="subtitle">Ficha de Particularidades — gerado em ${formatDate(new Date())}</p>
+<p class="subtitle">Ficha de Particularidades — gerado em ${formatDateBR(new Date())}</p>
 
 <div class="meta">
   <div class="meta-item">
@@ -133,7 +134,7 @@ ${items.map((p) => `
 
 <div class="footer">
   <span>ClienteMap — Sistema de Gestão de Particularidades</span>
-  <span>Gerado em ${new Date().toLocaleString("pt-BR")}</span>
+  <span>Gerado em ${formatDateTimeBR(new Date())}</span>
 </div>
 </body>
 </html>`;

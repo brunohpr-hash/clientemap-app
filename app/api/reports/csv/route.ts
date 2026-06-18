@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { withAuth, err } from "@/lib/api";
+import { formatDateBR } from "@/lib/date";
 
 // GET /api/reports/csv?clientId=xxx&sectorId=xxx — export filtered particularidades as CSV
 export const GET = withAuth(async (request, _context, { user }) => {
@@ -62,7 +63,7 @@ export const GET = withAuth(async (request, _context, { user }) => {
     p.isActive && !p.vigenciaFim ? "Vigente" : "Encerrada",
     escape(p.createdByUser.name),
     escape(p.updatedByUser.name),
-    fmt(p.updatedAt),
+    formatDateBR(p.updatedAt),
   ]);
 
   const csv =
