@@ -4,6 +4,7 @@ import Link from "next/link";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { ArrowLeft, Paperclip, Clock, User, Edit } from "lucide-react";
+import { formatDateTimeBR, formatDateBR } from "@/lib/date";
 import { prisma } from "@/lib/prisma";
 import { verifyAccessToken } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
@@ -214,7 +215,7 @@ export default async function ParticularidadePage({
             <div>
               <p className="text-xs text-muted-foreground mb-0.5">Última edição</p>
               <p className="font-medium">
-                {format(new Date(item.updatedAt), "dd/MM/yyyy", { locale: ptBR })}
+                {formatDateBR(item.updatedAt)}
               </p>
             </div>
           </div>
@@ -236,7 +237,7 @@ export default async function ParticularidadePage({
             </span>
             <span className="flex items-center gap-1">
               <Clock className="h-3 w-3" />
-              {format(new Date(item.createdAt), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
+              {formatDateTimeBR(item.createdAt)}
             </span>
           </div>
         </div>
@@ -264,7 +265,7 @@ export default async function ParticularidadePage({
                     </p>
                     <p className="text-xs text-muted-foreground">
                       {formatFileSize(a.fileSize)} · {a.uploader.name} ·{" "}
-                      {format(new Date(a.createdAt), "dd/MM/yyyy", { locale: ptBR })}
+                      {formatDateBR(a.createdAt)}
                     </p>
                   </div>
                 </a>
@@ -309,9 +310,7 @@ export default async function ParticularidadePage({
                       </span>
                       <span className="text-xs text-muted-foreground">
                         por {h.performer.name} ·{" "}
-                        {format(new Date(h.performedAt), "dd/MM/yyyy 'às' HH:mm", {
-                          locale: ptBR,
-                        })}
+                        {formatDateTimeBR(h.performedAt)}
                       </span>
                     </div>
                     {changedFields.length > 0 && (

@@ -12,6 +12,7 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { CriticalityBadge } from "./criticality-badge";
 import { cn } from "@/lib/utils";
+import { formatDateTimeBR } from "@/lib/date";
 
 interface ParticularidadeItem {
   id: string;
@@ -128,7 +129,7 @@ function ParticularidadeCard({ item }: { item: ParticularidadeItem }) {
           />
           <p className="text-xs text-muted-foreground mt-3">
             Criado por {item.createdByUser.name} · Editado por {item.updatedByUser.name} em{" "}
-            {format(new Date(item.updatedAt), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
+            {formatDateTimeBR(item.updatedAt)}
           </p>
         </div>
       )}
