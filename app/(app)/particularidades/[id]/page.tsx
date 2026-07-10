@@ -13,6 +13,7 @@ import { Separator } from "@/components/ui/separator";
 import { CriticalityBadge } from "@/components/particularidades/criticality-badge";
 import { AppHeader } from "@/components/shared/app-header";
 import { DeleteParticularidadeButton } from "@/components/particularidades/delete-button";
+import { DeleteAttachmentButton } from "@/components/particularidades/delete-attachment-button";
 import { cn } from "@/lib/utils";
 
 async function getParticularidade(id: string) {
@@ -65,6 +66,7 @@ function actionLabel(action: string) {
     case "updated": return "Editada";
     case "closed": return "Encerrada";
     case "reactivated": return "Reativada";
+    case "attachment_deleted": return "Anexo removido";
     default: return action;
   }
 }
@@ -74,6 +76,7 @@ function actionColor(action: string) {
     case "created": return "text-emerald-600 bg-emerald-50";
     case "closed": return "text-red-600 bg-red-50";
     case "reactivated": return "text-blue-600 bg-blue-50";
+    case "attachment_deleted": return "text-orange-600 bg-orange-50";
     default: return "text-amber-600 bg-amber-50";
   }
 }
@@ -251,24 +254,33 @@ export default async function ParticularidadePage({
             </h2>
             <div className="space-y-2">
               {item.attachments.map((a) => (
-                <a
+                <div
                   key={a.id}
-                  href={a.fileUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
                   className="flex items-center gap-3 p-3 rounded-lg border hover:bg-muted/50 transition-colors group"
                 >
-                  <Paperclip className="h-4 w-4 text-muted-foreground shrink-0" />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate group-hover:text-accent transition-colors">
-                      {a.originalName}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {formatFileSize(a.fileSize)} · {a.uploader.name} ·{" "}
-                      {formatDateBR(a.createdAt)}
-                    </p>
-                  </div>
-                </a>
+                  <a
+                    href={a.fileUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-3 flex-1 min-w-0"
+                  >
+                    <Paperclip className="h-4 w-4 text-muted-foreground shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate group-hover:text-accent transition-colors">
+                        {a.originalName}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {formatFileSize(a.fileSize)} · {a.uploader.name} ·{" "}
+                        {formatDateBR(a.createdAt)}
+                      </p>
+                    </div>
+                  </a>
+                  <DeleteAttachmentButton
+                    particularidadeId={item.id}
+                    attachmentId={a.id}
+                    fileName={a.originalName}
+                  />
+                </div>
               ))}
             </div>
           </div>
@@ -296,6 +308,7 @@ export default async function ParticularidadePage({
                         h.action === "created" ? "bg-emerald-500" :
                         h.action === "closed" ? "bg-red-500" :
                         h.action === "reactivated" ? "bg-blue-500" :
+                        h.action === "attachment_deleted" ? "bg-orange-500" :
                         "bg-amber-500"
                       )}
                     />
@@ -313,7 +326,15 @@ export default async function ParticularidadePage({
                         {formatDateTimeBR(h.performedAt)}
                       </span>
                     </div>
-                    {changedFields.length > 0 && (
+                    {h.action === "attachment_deleted" && (
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Arquivo removido:{" "}
+                        <span className="font-medium text-foreground">
+                          {String(oldVals.originalName ?? "—")}
+                        </span>
+                      </p>
+                    )}
+                    {h.action !== "attachment_deleted" && changedFields.length > 0 && (
                       <ul className="text-xs text-muted-foreground space-y-0.5 mt-1">
                         {changedFields.map((field) => {
                           const label = FIELD_LABELS[field] ?? field;

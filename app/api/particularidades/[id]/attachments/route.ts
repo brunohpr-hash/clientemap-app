@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { withAuth, ok, err } from "@/lib/api";
+import { writeAuditLog, getClientIp } from "@/lib/audit";
 import { uploadAttachment, deleteAttachment } from "@/lib/supabase";
 import { randomUUID } from "crypto";
 import path from "path";
@@ -59,6 +60,8 @@ export const POST = withAuth(async (request, context, { user }) => {
 });
 
 // DELETE /api/particularidades/:id/attachments?attachmentId=xxx
+// Qualquer usuário autenticado pode remover anexos — a movimentação é
+// sempre registrada no histórico da particularidade e no audit log.
 export const DELETE = withAuth(async (request, context, { user }) => {
   const { id } = await context.params;
   const url = new URL(request.url);
@@ -67,17 +70,54 @@ export const DELETE = withAuth(async (request, context, { user }) => {
 
   const attachment = await prisma.particularidadeAttachment.findFirst({
     where: { id: attachmentId, particularidadeId: id },
-    select: { id: true, fileUrl: true, uploadedBy: true, particularidade: { select: { clientId: true, sectorId: true } } },
+    select: {
+      id: true,
+      fileUrl: true,
+      originalName: true,
+      fileSize: true,
+      uploadedBy: true,
+    },
   });
   if (!attachment) return err("Anexo não encontrado", 404);
 
-  // Only uploader or admin can delete
-  if (user.role !== "admin" && attachment.uploadedBy !== user.sub) {
-    return err("Sem permissão para remover este anexo", 403);
-  }
+  // Remove o arquivo físico do storage (best-effort — não bloqueia a
+  // exclusão do registro nem o log caso o storage falhe).
+  await deleteAttachment(attachment.fileUrl).catch((e) => {
+    console.error("[attachments/DELETE] storage delete error:", e);
+  });
 
-  await deleteAttachment(attachment.fileUrl);
-  await prisma.particularidadeAttachment.delete({ where: { id: attachmentId } });
+  // Exclui o registro e grava o histórico de forma atômica.
+  await prisma.$transaction([
+    prisma.particularidadeAttachment.delete({ where: { id: attachmentId } }),
+    prisma.particularidadeHistory.create({
+      data: {
+        particularidadeId: id,
+        action: "attachment_deleted",
+        changedFields: ["attachment"],
+        oldValues: {
+          originalName: attachment.originalName,
+          fileSize: attachment.fileSize,
+        },
+        newValues: {},
+        performedBy: user.sub,
+      },
+    }),
+  ]);
+
+  await writeAuditLog({
+    userId: user.sub,
+    action: "delete",
+    entityType: "particularidade_attachment",
+    entityId: attachmentId,
+    details: {
+      particularidadeId: id,
+      originalName: attachment.originalName,
+      fileSize: attachment.fileSize,
+      uploadedBy: attachment.uploadedBy,
+    },
+    ipAddress: getClientIp(request),
+    userAgent: request.headers.get("user-agent"),
+  });
 
   return ok({ deleted: true });
 });
