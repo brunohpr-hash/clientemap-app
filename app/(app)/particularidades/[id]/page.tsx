@@ -14,6 +14,7 @@ import { CriticalityBadge } from "@/components/particularidades/criticality-badg
 import { AppHeader } from "@/components/shared/app-header";
 import { DeleteParticularidadeButton } from "@/components/particularidades/delete-button";
 import { DeleteAttachmentButton } from "@/components/particularidades/delete-attachment-button";
+import { AddAttachmentButton } from "@/components/particularidades/add-attachment-button";
 import { cn } from "@/lib/utils";
 
 async function getParticularidade(id: string) {
@@ -67,6 +68,7 @@ function actionLabel(action: string) {
     case "closed": return "Encerrada";
     case "reactivated": return "Reativada";
     case "attachment_deleted": return "Anexo removido";
+    case "attachment_added": return "Anexo adicionado";
     default: return action;
   }
 }
@@ -77,6 +79,7 @@ function actionColor(action: string) {
     case "closed": return "text-red-600 bg-red-50";
     case "reactivated": return "text-blue-600 bg-blue-50";
     case "attachment_deleted": return "text-orange-600 bg-orange-50";
+    case "attachment_added": return "text-teal-600 bg-teal-50";
     default: return "text-amber-600 bg-amber-50";
   }
 }
@@ -246,12 +249,19 @@ export default async function ParticularidadePage({
         </div>
 
         {/* Attachments */}
-        {item.attachments.length > 0 && (
-          <div className="rounded-xl border bg-card p-6 space-y-3">
+        <div className="rounded-xl border bg-card p-6 space-y-3">
+          <div className="flex items-center justify-between gap-2">
             <h2 className="font-semibold text-sm flex items-center gap-2">
               <Paperclip className="h-4 w-4" />
               Anexos ({item.attachments.length})
             </h2>
+            <AddAttachmentButton particularidadeId={item.id} />
+          </div>
+          {item.attachments.length === 0 ? (
+            <p className="text-sm text-muted-foreground">
+              Nenhum anexo. Use o botão acima para adicionar.
+            </p>
+          ) : (
             <div className="space-y-2">
               {item.attachments.map((a) => (
                 <div
@@ -283,8 +293,8 @@ export default async function ParticularidadePage({
                 </div>
               ))}
             </div>
-          </div>
-        )}
+          )}
+        </div>
 
         {/* History */}
         <div className="rounded-xl border bg-card p-6 space-y-4">
@@ -309,6 +319,7 @@ export default async function ParticularidadePage({
                         h.action === "closed" ? "bg-red-500" :
                         h.action === "reactivated" ? "bg-blue-500" :
                         h.action === "attachment_deleted" ? "bg-orange-500" :
+                        h.action === "attachment_added" ? "bg-teal-500" :
                         "bg-amber-500"
                       )}
                     />
@@ -334,7 +345,15 @@ export default async function ParticularidadePage({
                         </span>
                       </p>
                     )}
-                    {h.action !== "attachment_deleted" && changedFields.length > 0 && (
+                    {h.action === "attachment_added" && (
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Arquivo adicionado:{" "}
+                        <span className="font-medium text-foreground">
+                          {String(newVals.originalName ?? "—")}
+                        </span>
+                      </p>
+                    )}
+                    {!h.action.startsWith("attachment_") && changedFields.length > 0 && (
                       <ul className="text-xs text-muted-foreground space-y-0.5 mt-1">
                         {changedFields.map((field) => {
                           const label = FIELD_LABELS[field] ?? field;

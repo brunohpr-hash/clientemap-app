@@ -41,19 +41,49 @@ export const POST = withAuth(async (request, context, { user }) => {
     return err(`Falha no upload: ${msg}`, 500);
   }
 
-  const attachment = await prisma.particularidadeAttachment.create({
-    data: {
+  // Cria o anexo e grava o histórico de forma atômica.
+  const [attachment] = await prisma.$transaction([
+    prisma.particularidadeAttachment.create({
+      data: {
+        particularidadeId: id,
+        originalName: file.name,
+        filename,
+        fileUrl,
+        fileSize: file.size,
+        mimeType: file.type,
+        uploadedBy: user.sub,
+      },
+      select: {
+        id: true, originalName: true, fileUrl: true, fileSize: true, mimeType: true, createdAt: true,
+      },
+    }),
+    prisma.particularidadeHistory.create({
+      data: {
+        particularidadeId: id,
+        action: "attachment_added",
+        changedFields: ["attachment"],
+        oldValues: {},
+        newValues: {
+          originalName: file.name,
+          fileSize: file.size,
+        },
+        performedBy: user.sub,
+      },
+    }),
+  ]);
+
+  await writeAuditLog({
+    userId: user.sub,
+    action: "create",
+    entityType: "particularidade_attachment",
+    entityId: attachment.id,
+    details: {
       particularidadeId: id,
       originalName: file.name,
-      filename,
-      fileUrl,
       fileSize: file.size,
-      mimeType: file.type,
-      uploadedBy: user.sub,
     },
-    select: {
-      id: true, originalName: true, fileUrl: true, fileSize: true, mimeType: true, createdAt: true,
-    },
+    ipAddress: getClientIp(request),
+    userAgent: request.headers.get("user-agent"),
   });
 
   return ok(attachment);
